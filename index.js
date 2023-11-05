@@ -23,6 +23,14 @@ async function run() {
   try {
     await client.connect();
 
+    const roomsCollection = client.db("guestGlide").collection("rooms");
+
+    app.get("/rooms", async (req, res) => {
+      const rooms = roomsCollection.find();
+      const result = await rooms.toArray();
+      res.send(result);
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
