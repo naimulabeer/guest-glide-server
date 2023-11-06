@@ -47,6 +47,7 @@ async function run() {
 
     const roomsCollection = client.db("guestGlide").collection("rooms");
     const bookingCollection = client.db("guestGlide").collection("bookings");
+    const reviewsCollection = client.db("guestGlide").collection("reviews");
 
     app.post("/jwt", async (req, res) => {
       const user = req.body;
@@ -157,6 +158,12 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await bookingCollection.deleteOne(query);
+      res.send(result);
+    });
+
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      const result = await reviewsCollection.insertOne(review);
       res.send(result);
     });
 
