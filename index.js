@@ -24,6 +24,7 @@ async function run() {
     await client.connect();
 
     const roomsCollection = client.db("guestGlide").collection("rooms");
+    const bookingCollection = client.db("guestGlide").collection("bookings");
 
     app.get("/rooms", async (req, res) => {
       const rooms = roomsCollection.find();
@@ -35,6 +36,18 @@ async function run() {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await roomsCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get("/bookings", async (req, res) => {
+      const bookings = bookingCollection.find();
+      const result = await bookings.toArray();
+      res.send(result);
+    });
+
+    app.post("/bookings", async (req, res) => {
+      const booking = req.body;
+      const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
 
