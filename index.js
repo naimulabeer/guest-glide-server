@@ -10,7 +10,7 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http:localhost:5173"],
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -27,6 +27,20 @@ const client = new MongoClient(uri, {
   },
 });
 
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
 async function run() {
   try {
     await client.connect();
@@ -34,12 +48,11 @@ async function run() {
     const roomsCollection = client.db("guestGlide").collection("rooms");
     const bookingCollection = client.db("guestGlide").collection("bookings");
 
-    app.get("/jwt", async (req, res) => {
+    app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
-
       res
         .cookie("token", token, {
           httpOnly: true,
@@ -47,6 +60,11 @@ async function run() {
           sameSite: "none",
         })
         .send({ success: true });
+    });
+
+    app.post("/logout", async (req, res) => {
+      const user = req.body;
+      res.clearCookie("token").send({ success: true });
     });
 
     app.get("/rooms", async (req, res) => {
@@ -62,9 +80,16 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/bookings", async (req, res) => {
-      const bookings = bookingCollection.find();
-      const result = await bookings.toArray();
+    app.get("/bookings", verifyToken, async (req, res) => {
+      if (req.user.email !== req.query.email) {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email };
+      }
+
+      const result = await bookingCollection.find(query).toArray();
       res.send(result);
     });
 
@@ -74,7 +99,19 @@ async function run() {
       res.send(result);
     });
 
-    app.patch("/bookings/:id", async (req, res) => {});
+    app.patch("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedBooking = req.body;
+
+      const updateDoc = {
+        $set: {
+          status: updatedBooking.status,
+        },
+      };
+      const result = await bookingCollection.updateOne(filter, updateDoc);
+      res.send(result);
+    });
 
     app.delete("/bookings/:id", async (req, res) => {
       const id = req.params.id;
