@@ -95,6 +95,23 @@ async function run() {
 
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
+
+      const existingBooking = await bookingCollection.findOne({
+        room_Id: booking.room_Id,
+        status: "confirm",
+      });
+
+      if (existingBooking) {
+        return res.status(400).send({ message: "Room is already booked" });
+      }
+
+      const roomQuery = { _id: new ObjectId(booking.room_Id) };
+      const room = await roomsCollection.findOne(roomQuery);
+
+      if (room.available_seats <= 0) {
+        return res.status(400).send({ message: "Room is fully booked" });
+      }
+
       const result = await bookingCollection.insertOne(booking);
       res.send(result);
     });
@@ -103,6 +120,29 @@ async function run() {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedBooking = req.body;
+
+      if (updatedBooking.status === "confirm") {
+        const existingBooking = await bookingCollection.findOne(filter);
+        if (!existingBooking || existingBooking.status === "confirm") {
+          return res
+            .status(400)
+            .send({ message: "Booking not found or already confirmed" });
+        }
+        const roomQuery = { _id: new ObjectId(existingBooking.room_Id) };
+        const room = await roomsCollection.findOne(roomQuery);
+
+        if (room.available_seats <= 0) {
+          return res.status(400).send({ message: "Room is fully booked" });
+        }
+
+        await bookingCollection.updateOne(filter, {
+          $set: { date: existingBooking.date },
+        });
+
+        // Decrease available seats by 1
+        const updatedRoom = { available_seats: room.available_seats - 1 };
+        await roomsCollection.updateOne(roomQuery, { $set: updatedRoom });
+      }
 
       const updateDoc = {
         $set: {
