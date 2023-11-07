@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
+const moment = require("moment");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -100,7 +101,6 @@ async function run() {
       const existingBooking = await bookingCollection.findOne({
         room_Id: booking.room_Id,
         email: booking.email,
-        status: "confirm",
       });
 
       if (existingBooking) {
