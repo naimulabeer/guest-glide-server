@@ -99,6 +99,7 @@ async function run() {
 
       const existingBooking = await bookingCollection.findOne({
         room_Id: booking.room_Id,
+        email: booking.email,
         status: "confirm",
       });
 
@@ -135,10 +136,6 @@ async function run() {
         if (room.available_seats <= 0) {
           return res.status(400).send({ message: "Room is fully booked" });
         }
-
-        await bookingCollection.updateOne(filter, {
-          $set: { date: existingBooking.date },
-        });
 
         // Decrease available seats by 1
         const updatedRoom = { available_seats: room.available_seats - 1 };
