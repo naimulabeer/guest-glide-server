@@ -158,6 +158,19 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/reviews", async (req, res) => {
+      const reviews = reviewsCollection.find();
+      const result = await reviews.toArray();
+      res.send(result);
+    });
+
+    app.get("/reviews/:id", async (req, res) => {
+      const { reviewerId } = req.query;
+      const reviews = reviewsCollection.find({ reviewerId }); // Filter reviews by reviewerId
+      const result = await reviews.toArray();
+      res.send(result);
+    });
+
     app.post("/reviews", async (req, res) => {
       const review = req.body;
       const result = await reviewsCollection.insertOne(review);
