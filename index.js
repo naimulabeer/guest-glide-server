@@ -11,7 +11,10 @@ const port = process.env.PORT || 5000;
 
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "https://guest-glider.web.app",
+      "https://guest-glider.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -44,7 +47,7 @@ const verifyToken = (req, res, next) => {
 
 async function run() {
   try {
-    await client.connect();
+    //await client.connect();
 
     const roomsCollection = client.db("guestGlide").collection("rooms");
     const bookingCollection = client.db("guestGlide").collection("bookings");
@@ -159,12 +162,6 @@ async function run() {
     });
 
     app.get("/reviews", async (req, res) => {
-      const reviews = reviewsCollection.find();
-      const result = await reviews.toArray();
-      res.send(result);
-    });
-
-    app.get("/reviews/:id", async (req, res) => {
       const { reviewerId } = req.query;
       const reviews = reviewsCollection.find({ reviewerId }); // Filter reviews by reviewerId
       const result = await reviews.toArray();
@@ -186,6 +183,10 @@ async function run() {
   }
 }
 run().catch(console.dir);
+
+app.get("/", (req, res) => {
+  res.send("Hotel Room Server is running");
+});
 
 app.listen(port, () => {
   console.log("Listening from port", port);
